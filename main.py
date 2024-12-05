@@ -21,6 +21,7 @@ their feelings, you validate their emotions and, when appropriate, share insight
 Franklian psychology, including themes like the separation of tasks, finding meaning in suffering, living 
 in the here and now, and interpersonal relationships.
 """
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -28,8 +29,6 @@ def home():
 @app.route('/test_static')
 def test_static():
     return app.send_static_file('styles.css')  # Replace with any static file name
-
-
 
 # Load knowledge bases from JSON files
 def load_knowledge_bases():
@@ -110,6 +109,37 @@ def chat_with_ollama():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# Route for fetching chat history (static mock data)
+@app.route('/chat-history', methods=['GET'])
+def get_chat_history():
+    # This route should fetch chat history if you have a database or static data
+    chat_history = [
+        {'id': 1, 'title': 'Chat with AI (Nov 14)'},
+        {'id': 2, 'title': 'Chat with AI (Nov 15)'},
+    ]
+    return jsonify(chat_history)
+
+# Route to fetch a specific chat's messages
+@app.route('/chat/<int:chat_id>', methods=['GET'])
+def get_chat_content(chat_id):
+    chat_contents = {
+        1: [
+            {'sender': 'ai', 'text': 'Hello! How can I assist you today?'},
+            {'sender': 'user', 'text': 'I’ve been feeling a bit stressed lately.'},
+            {'sender': 'ai', 'text': 'I’m sorry to hear that. Can you tell me more about what’s causing your stress?'},
+        ],
+        2: [
+            {'sender': 'ai', 'text': 'Hello! What can I do for you today?'},
+            {'sender': 'user', 'text': 'I’ve been working on a project.'},
+            {'sender': 'ai', 'text': 'That sounds interesting! What kind of project?'},
+        ]
+    }
+    
+    if chat_id in chat_contents:
+        return jsonify({'messages': chat_contents[chat_id]})
+    else:
+        return jsonify({'error': 'Chat not found'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)
