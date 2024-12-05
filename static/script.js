@@ -5,14 +5,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const newChatButton = document.getElementById('new-chat');
     const chatHistory = document.getElementById('chat-history');
 
-    // Mock previous chats for sidebar
-    const previousChats = [
-        { id: 1, title: 'Chat with AI (Nov 14)' },
-        { id: 2, title: 'Chat with AI (Nov 15)' },
-    ];
+    // Dynamic backend URL for deployment
+    const backendUrl = window.location.origin;
 
-    // Initialize chat history in the sidebar
-    initializeChatHistory();
+    // Chat history array
+    let previousChats = [];
+
+    // Initialize chat history on page load
+    loadChatHistory();
 
     // Event listener for sending a message
     sendButton.addEventListener('click', sendMessage);
@@ -26,37 +26,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listener for starting a new chat
     newChatButton.addEventListener('click', startNewChat);
 
+    // Load chat history from the backend
+    // function loadChatHistory() {
+    //     fetch(`${backendUrl}/chat-history`)
+    //         .then((response) => response.json())
+    //         .then((data) => {
+    //             previousChats = data; // Assuming data is an array of chat summaries
+    //             initializeChatHistory();
+    //         })
+    //         .catch((error) => {
+    //             console.error('Error loading chat history:', error);
+    //             displayMessage('Unable to load chat history.', 'ai');
+    //         });
+    // }
+
     function initializeChatHistory() {
-        chatHistory.innerHTML = ''; // Clear any existing items
+        chatHistory.innerHTML = ''; // Clear existing items
 
         previousChats.forEach((chat) => {
             const listItem = document.createElement('li');
             listItem.textContent = chat.title;
             listItem.dataset.chatId = chat.id;
 
-            // Click event to simulate loading a previous chat
+            // Click event to load a specific chat
             listItem.addEventListener('click', () => {
-                loadChatHistory(chat.id);
+                loadChatContent(chat.id);
             });
 
             chatHistory.appendChild(listItem);
         });
     }
 
-    function loadChatHistory(chatId) {
-        // For now, just simulate loading chat history
-        chatDisplay.innerHTML = '';
-        const mockMessages = [
-            { sender: 'ai', text: 'Hello! How can I assist you today?' },
-            { sender: 'user', text: 'I’ve been feeling a bit stressed lately.' },
-            { sender: 'ai', text: 'I’m sorry to hear that. Can you tell me more about what’s causing your stress?' },
-        ];
-
-        mockMessages.forEach((message) => {
-            displayMessage(message.text, message.sender);
-        });
-
-        messageInput.value = '';
+    function loadChatContent(chatId) {
+        fetch(`${backendUrl}/chat/${chatId}`)
+            .then((response) => response.json())
+            .then((data) => {
+                chatDisplay.innerHTML = ''; // Clear current chat
+                data.messages.forEach((message) => {
+                    displayMessage(message.text, message.sender);
+                });
+                messageInput.value = '';
+            })
+            .catch((error) => {
+                console.error('Error loading chat content:', error);
+                displayMessage('Unable to load this chat.', 'ai');
+            });
     }
 
     function startNewChat() {
@@ -65,17 +79,33 @@ document.addEventListener('DOMContentLoaded', () => {
         displayMessage('New chat started. How can I help you today?', 'ai');
     }
 
+    let isFetching = false;
+
     function sendMessage() {
         const message = messageInput.value.trim();
-        if (!message) return;
+        if (!message || isFetching) return;
 
-        // Display user's message
+        isFetching = true; // Block additional requests
         displayMessage(message, 'user');
 
-        // Simulate backend response
-        simulateBackendResponse(message);
-
-        messageInput.value = '';
+        fetch(`${backendUrl}/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                displayMessage(data.response, 'ai');
+            })
+            .catch((error) => {
+                displayMessage('Oops! Something went wrong. Please try again later.', 'ai');
+                console.error(error);
+            })
+            .finally(() => {
+                isFetching = false; // Allow new requests
+            });
     }
 
     function displayMessage(message, sender) {
@@ -88,29 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatDisplay.appendChild(messageDiv);
         chatDisplay.scrollTop = chatDisplay.scrollHeight;
     }
-
-    function simulateBackendResponse(userMessage) {
-        displayTypingIndicator();
-        
-        fetch('http://0.0.0.0:1000/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ message: userMessage }),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                removeTypingIndicator();
-                displayMessage(data.response, 'ai');
-            })
-            .catch((error) => {
-                removeTypingIndicator();
-                displayMessage('Error: Unable to fetch response.', 'ai');
-                console.error(error);
-            });
-    }
-    
 
     function displayTypingIndicator() {
         const typingIndicator = document.createElement('div');
