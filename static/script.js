@@ -27,18 +27,22 @@ document.addEventListener('DOMContentLoaded', () => {
     newChatButton.addEventListener('click', startNewChat);
 
     // Load chat history from the backend
-    // function loadChatHistory() {
-    //     fetch(`${backendUrl}/chat-history`)
-    //         .then((response) => response.json())
-    //         .then((data) => {
-    //             previousChats = data; // Assuming data is an array of chat summaries
-    //             initializeChatHistory();
-    //         })
-    //         .catch((error) => {
-    //             console.error('Error loading chat history:', error);
-    //             displayMessage('Unable to load chat history.', 'ai');
-    //         });
-    // }
+    function loadChatHistory() {
+        fetch(`${backendUrl}/chat-history`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (Array.isArray(data)) {
+                    previousChats = data; // Assuming data is an array of chat summaries
+                    initializeChatHistory();
+                } else {
+                    throw new Error("Invalid chat history data");
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading chat history:', error);
+                displayMessage('Unable to load chat history. Please try again later.', 'ai');
+            });
+    }
 
     function initializeChatHistory() {
         chatHistory.innerHTML = ''; // Clear existing items
@@ -62,21 +66,25 @@ document.addEventListener('DOMContentLoaded', () => {
             .then((response) => response.json())
             .then((data) => {
                 chatDisplay.innerHTML = ''; // Clear current chat
-                data.messages.forEach((message) => {
-                    displayMessage(message.text, message.sender);
-                });
-                messageInput.value = '';
+                if (data.messages && Array.isArray(data.messages)) {
+                    data.messages.forEach((message) => {
+                        displayMessage(message.text, message.sender);
+                    });
+                    messageInput.value = '';
+                } else {
+                    throw new Error("Invalid chat content data");
+                }
             })
             .catch((error) => {
                 console.error('Error loading chat content:', error);
-                displayMessage('Unable to load this chat.', 'ai');
+                displayMessage('Unable to load this chat. Please try again later.', 'ai');
             });
     }
 
     function startNewChat() {
         chatDisplay.innerHTML = ''; // Clear current chat
         messageInput.value = ''; // Clear input
-        displayMessage('New chat started. How can I help you today?', 'ai');
+        displayMessage('Hey, How can I help you today?', 'ai');
     }
 
     let isFetching = false;
@@ -97,7 +105,11 @@ document.addEventListener('DOMContentLoaded', () => {
         })
             .then((response) => response.json())
             .then((data) => {
-                displayMessage(data.response, 'ai');
+                if (data.response) {
+                    displayMessage(data.response, 'ai');
+                } else {
+                    throw new Error('No response from server');
+                }
             })
             .catch((error) => {
                 displayMessage('Oops! Something went wrong. Please try again later.', 'ai');
@@ -106,6 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .finally(() => {
                 isFetching = false; // Allow new requests
             });
+
+        messageInput.value = ''; // Clear the message input after sending
     }
 
     function displayMessage(message, sender) {
