@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function simulateBackendResponse(userMessage) {
         displayTypingIndicator();
         
-        fetch('http://127.0.0.1:5000/chat', {
+        fetch('http://0.0.0.0:1000/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
